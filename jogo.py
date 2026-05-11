@@ -1,5 +1,14 @@
 
+from olivia import olivia_tela
+from taylor import taylor_tela
+from ladygaga import ladygaga_tela
+from katy import katy_tela
 import pygame
+
+SCREEN_OLIVIA = 1
+SCREEN_TAYLOR = 2
+SCREEN_LADY = 3
+SCREEN_KATY = 4
 
 pygame.init()
 pygame.mixer.init()
@@ -14,8 +23,10 @@ background = pygame.transform.scale(background, (1280, 720))
 
 pygame.mixer.music.load('assests/sons/ophelia.ogg') # mudar para a musica de introdução
 pygame.mixer.music.play(-1)  # toca em loop até fechar o jogo
+
 # ----- Inicia estruturas de dados
 game = True
+screen_state = SCREEN_OLIVIA
 
 
 # ===== Loop principal =====
@@ -25,7 +36,15 @@ while game:
         # ----- Verifica consequências
         if event.type == pygame.QUIT:
             game = False
-        
+
+    if screen_state == SCREEN_OLIVIA:
+        screen_state = olivia_tela(window)
+    elif screen_state == SCREEN_TAYLOR:
+        screen_state = taylor_tela(window)
+    elif screen_state == SCREEN_LADY:
+        screen_state = ladygaga_tela(window)
+    elif screen_state == SCREEN_KATY:
+        screen_state = katy_tela(window)
 
     # ----- Gera saídas
     window.blit(background, (0, 0))  # Desenha o fundo na tela

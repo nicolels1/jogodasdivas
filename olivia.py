@@ -17,10 +17,10 @@ def olivia_tela(screen):
         for event in pygame.event.get():
             # ----- Verifica consequências
             if event.type == pygame.QUIT:
-                state = DONE
+                return DONE
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    state = BACK_TO_MENU
+                    return BACK_TO_MENU
         
         # ----- Gera saídas
         screen.blit(background, (0, 0))  # Desenha o fundo na tela

@@ -5,6 +5,7 @@ from katy import katy_tela
 import pygame
 
 #estados
+DONE = -1
 MENU = 0
 SCREEN_OLIVIA = 1
 SCREEN_TAYLOR = 2
@@ -67,6 +68,8 @@ while game:
         screen_state = ladygaga_tela(window)
     elif screen_state == SCREEN_KATY:
         screen_state = katy_tela(window)
+    elif screen_state == DONE:
+        game = False
 
     pygame.display.flip()
     clock.tick(60)

@@ -1,6 +1,6 @@
 import pygame
 
-SCREEN_OLIVIA = 1
+SCREEN_OLIVIA = 3
 
 # carrega 1 vez só
 sprite = None

@@ -7,10 +7,10 @@ import pygame
 #estados
 DONE = -1
 MENU = 0
-SCREEN_OLIVIA = 1
+SCREEN_OLIVIA = 3
 SCREEN_TAYLOR = 2
-SCREEN_LADY = 3
-SCREEN_KATY = 4
+SCREEN_LADYGAGA = 4
+SCREEN_KATY = 1
 
 pygame.init()
 pygame.mixer.init()
@@ -64,7 +64,7 @@ while game:
         screen_state = olivia_tela(window)
     elif screen_state == SCREEN_TAYLOR:
         screen_state = taylor_tela(window)
-    elif screen_state == SCREEN_LADY:
+    elif screen_state == SCREEN_LADYGAGA:
         screen_state = ladygaga_tela(window)
     elif screen_state == SCREEN_KATY:
         screen_state = katy_tela(window)

@@ -1,6 +1,6 @@
 import pygame
 
-SCREEN_KATY = 1
+SCREEN_KATY = 3
 
 sprite = None
 background = None
@@ -29,7 +29,7 @@ def katy_tela(window):
 
     if background is None:
         background = pygame.image.load(
-            'assets/sprites/tela_katy_seamless.png'
+            'assets/imagens/tela katy perry.png'
         ).convert()
         background = pygame.transform.scale(background, (1280, 720))
 

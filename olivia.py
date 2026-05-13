@@ -1,6 +1,6 @@
 import pygame
 
-SCREEN_OLIVIA = 3
+SCREEN_OLIVIA = 1
 
 # carrega 1 vez só
 sprite = None
@@ -62,7 +62,7 @@ def olivia_tela(window):
         frame = 0
 
     # desenha fundo
-    background = pygame.image.load('assests/sprites/tela oliviarodrigo.png').convert()
+    background = pygame.image.load('assests/imagens/tela oliviarodrigo.png').convert()
     background = pygame.transform.scale(background, (1280, 720))
 
     # corta o frame certo

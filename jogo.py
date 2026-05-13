@@ -7,10 +7,10 @@ import pygame
 #estados
 DONE = -1
 MENU = 0
-SCREEN_OLIVIA = 3
+SCREEN_OLIVIA = 1
 SCREEN_TAYLOR = 2
+SCREEN_KATY = 3
 SCREEN_LADYGAGA = 4
-SCREEN_KATY = 1
 
 pygame.init()
 pygame.mixer.init()

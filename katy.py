@@ -25,11 +25,11 @@ def katy_tela(window):
     global sprite, background, frame, tempo, scroll_x, vel_y, y
 
     if sprite is None:
-        sprite = pygame.image.load('assets/imagens/katy_sprite.png').convert_alpha()
+        sprite = pygame.image.load('assets/sprites/katy_sprite.png').convert_alpha()
 
     if background is None:
         background = pygame.image.load(
-            'assets/imagens/tela_katy_seamless.png'
+            'assets/sprites/tela_katy_seamless.png'
         ).convert()
         background = pygame.transform.scale(background, (1280, 720))
 

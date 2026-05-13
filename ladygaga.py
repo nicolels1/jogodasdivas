@@ -27,7 +27,7 @@ def ladygaga_tela(window):
 
     # carrega a imagem só na primeira vez
     if sprite is None:
-        sprite = pygame.image.load('assests/imagens/ladygaga_sprite.png').convert_alpha()
+        sprite = pygame.image.load('assests/sprites/ladygaga_sprite.png').convert_alpha()
 
     dt = clock.tick(60)
 
@@ -62,7 +62,7 @@ def ladygaga_tela(window):
         frame = 0
 
     # desenha fundo
-    background = pygame.image.load('assests/imagens/tela ladygaga.png').convert()
+    background = pygame.image.load('assests/sprites/tela ladygaga.png').convert()
     background = pygame.transform.scale(background, (1280, 720))
 
     # corta o frame certo

@@ -16,13 +16,17 @@ total_frames = 6
 scroll_x = 0
 vel_y = 0
 gravidade = 0.8
-forca_pulo = -20
+forca_pulo = -25
 chao = 535
 y = chao
+moeda_img = None
+moedas = None
+pontos = 0
+fonte = None
 
 clock = pygame.time.Clock()
 
-TILE_SIZE = 72
+TILE_SIZE = 100
 EMPTY = 0
 BLOCK = 1
 SECAO_LARGURA = 1280
@@ -34,7 +38,7 @@ bloco_img = None
 secoes_criadas = None
 
 
-GROUND_ROW = MAPA_LINHAS - 4 
+GROUND_ROW = MAPA_LINHAS - 6
 
 def gerar_secao(secao):
     random.seed(secao)
@@ -62,6 +66,11 @@ def gerar_secao(secao):
 
     return mapa
 
+class Moeda(pygame.sprite.Sprite):
+    def __init__(self, img, x, y):
+        super().__init__()
+        self.image = pygame.transform.scale(img, (40, 64))
+        self.rect = self.image.get_rect(topleft=(x, y))
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_img, row, column, offset_x=0):
@@ -71,10 +80,29 @@ class Tile(pygame.sprite.Sprite):
         self.rect.x = offset_x + column * TILE_SIZE
         self.rect.y = row * TILE_SIZE
 
+class JogadorTemp(pygame.sprite.Sprite):
+    def __init__(self, rect):
+        super().__init__()
+        self.rect = rect
+
 musica_tocando = False
 
 def olivia_tela(window):
-    global sprite, frame, tempo, scroll_x, vel_y, y, blocks, bloco_img, secoes_criadas, musica_tocando
+    global sprite, frame, tempo, scroll_x, vel_y, y
+    global blocks, bloco_img, secoes_criadas
+    global musica_tocando, moeda_img, moedas, pontos
+
+    global fonte
+
+    if fonte is None:
+        fonte = pygame.font.SysFont('arial', 30)
+
+    if moeda_img is None:
+        moeda_img = pygame.image.load('assests/imagens/moeda.png').convert_alpha()
+
+
+    if moedas is None:
+        moedas = pygame.sprite.Group()
 
     # toca a música só quando entrar nessa tela
     if not musica_tocando:
@@ -109,11 +137,25 @@ def olivia_tela(window):
     for secao in range(secao_atual - 1, secao_atual + 2):
         if secao not in secoes_criadas:
             mapa_secao = gerar_secao(secao)
+
             for row in range(len(mapa_secao)):
                 for col in range(len(mapa_secao[row])):
                     if mapa_secao[row][col] == BLOCK:
                         blocks.add(Tile(bloco_img, row, col, secao * SECAO_LARGURA))
+
+            for row in range(len(mapa_secao)):
+                for col in range(len(mapa_secao[row])):
+                    if mapa_secao[row][col] == BLOCK:
+                        # chance de ter moeda nesse bloco
+                        if random.random() < 0.2:  # 20% de chance
+                            moeda_x = secao * SECAO_LARGURA + col * TILE_SIZE
+                            moeda_y = row * TILE_SIZE - 60  # em cima do bloco
+                            moedas.add(Moeda(moeda_img, moeda_x, moeda_y))
+
             secoes_criadas.add(secao)
+        
+    for moeda in moedas:
+        window.blit(moeda.image, (moeda.rect.x - scroll_x, moeda.rect.y))
 
     keys = pygame.key.get_pressed()
     andando = False
@@ -134,7 +176,7 @@ def olivia_tela(window):
     sprite_recortado = sprite.subsurface(rect)
     sprite_menor = pygame.transform.scale(
         sprite_recortado,
-        (int(frame_w * 0.55), int(frame_h * 0.55))
+        (int(frame_w * 0.50), int(frame_h * 0.50))
     )
 
     # checa se pode pular
@@ -159,24 +201,15 @@ def olivia_tela(window):
     vel_y += gravidade
     y += vel_y
 
-    # colisão vertical com os blocos
-    player_rect = sprite_menor.get_rect(topleft=(x + scroll_x, y))
-    for bloco in blocks:
-        if player_rect.colliderect(bloco.rect):
-            # só "sobe" para o topo se veio caindo de cima
-            if vel_y > 0 and prev_y + player_rect.height <= bloco.rect.top:
-                y = bloco.rect.top - player_rect.height
-                vel_y = 0
-                player_rect.y = y
+    
+    for moeda in moedas.copy():
+        if player_rect.colliderect(moeda.rect):
+            moedas.remove(moeda)
+            pontos += 1
 
-            # se bater com a cabeça, para a subida
-            elif vel_y < 0 and prev_y >= bloco.rect.bottom:
-                y = bloco.rect.bottom
-                vel_y = 0
-                player_rect.y = y
+    player_rect = sprite_menor.get_rect(topleft=(x + scroll_x, y))
                 
     # colisão vertical com os blocos
-    player_rect = sprite_menor.get_rect(topleft=(x + scroll_x, y))
     for bloco in blocks:
         if player_rect.colliderect(bloco.rect):
             if vel_y > 0:  # caindo
@@ -200,7 +233,7 @@ def olivia_tela(window):
             frame = (frame + 1) % total_frames
             tempo = 0
     else:
-        frame = 0
+        frame = 1
 
     # desenha fundo repetido
     scroll = scroll_x % bg_w
@@ -212,7 +245,13 @@ def olivia_tela(window):
     for tile in blocks:
         window.blit(tile.image, (tile.rect.x - scroll_x, tile.rect.y))
 
+    # desenha as moedas
+    for moeda in moedas:
+        window.blit(moeda.image, (moeda.rect.x - scroll_x, moeda.rect.y))
+
     # desenha personagem
     window.blit(sprite_menor, (x, y))
+    texto = fonte.render(f'Moedas: {pontos}', True, (255, 255, 0))
+    window.blit(texto, (20, 20))
 
     return SCREEN_OLIVIA

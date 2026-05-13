@@ -16,13 +16,13 @@ total_frames = 6
 scroll_x = 0
 vel_y = 0
 gravidade = 0.8
-forca_pulo = -15
-chao = 515
+forca_pulo = -20
+chao = 535
 y = chao
 
 clock = pygame.time.Clock()
 
-TILE_SIZE = 64
+TILE_SIZE = 72
 EMPTY = 0
 BLOCK = 1
 SECAO_LARGURA = 1280
@@ -34,20 +34,31 @@ bloco_img = None
 secoes_criadas = None
 
 
+GROUND_ROW = MAPA_LINHAS - 4 
+
 def gerar_secao(secao):
     random.seed(secao)
 
-    mapa = []
-    for row in range(MAPA_LINHAS):
-        linha = []
-        for col in range(MAPA_COLUNAS):
-            if row >= MAPA_LINHAS - 2 and random.random() < 0.18:
-                linha.append(BLOCK)  # blocos mais perto do chão
-            elif row >= MAPA_LINHAS - 5 and random.random() < 0.08:
-                linha.append(BLOCK)  # alguns blocos mais altos
-            else:
-                linha.append(EMPTY)
-        mapa.append(linha)
+    mapa = [[EMPTY for _ in range(MAPA_COLUNAS)] for _ in range(MAPA_LINHAS)]
+
+    # chão contínuo
+    for col in range(MAPA_COLUNAS):
+        mapa[GROUND_ROW][col] = BLOCK
+
+    # pequenos buracos no chão
+    for _ in range(2):
+        gap_start = random.randint(2, MAPA_COLUNAS - 4)
+        gap_len = random.randint(2, 3)
+        for col in range(gap_start, min(gap_start + gap_len, MAPA_COLUNAS)):
+            mapa[GROUND_ROW][col] = EMPTY
+
+    # plataformas mais organizadas
+    for _ in range(3):
+        row = GROUND_ROW - random.randint(2, 3)
+        start = random.randint(0, MAPA_COLUNAS - 5)
+        length = random.randint(3, 6)
+        for col in range(start, min(start + length, MAPA_COLUNAS)):
+            mapa[row][col] = BLOCK
 
     return mapa
 
@@ -60,9 +71,17 @@ class Tile(pygame.sprite.Sprite):
         self.rect.x = offset_x + column * TILE_SIZE
         self.rect.y = row * TILE_SIZE
 
+musica_tocando = False
 
 def olivia_tela(window):
-    global sprite, frame, tempo, scroll_x, vel_y, y, blocks, bloco_img, secoes_criadas
+    global sprite, frame, tempo, scroll_x, vel_y, y, blocks, bloco_img, secoes_criadas, musica_tocando
+
+    # toca a música só quando entrar nessa tela
+    if not musica_tocando:
+        pygame.mixer.music.stop()
+        pygame.mixer.music.load('assests/sons/brutal.ogg')
+        pygame.mixer.music.play(-1)
+        musica_tocando = True
 
     # carrega a imagem só na primeira vez
     if sprite is None:
@@ -115,7 +134,7 @@ def olivia_tela(window):
     sprite_recortado = sprite.subsurface(rect)
     sprite_menor = pygame.transform.scale(
         sprite_recortado,
-        (int(frame_w * 0.65), int(frame_h * 0.65))
+        (int(frame_w * 0.55), int(frame_h * 0.55))
     )
 
     # checa se pode pular
@@ -134,10 +153,28 @@ def olivia_tela(window):
     if keys[pygame.K_SPACE] and pode_pular:
         vel_y = forca_pulo
 
+    prev_y = y
+
     # gravidade
     vel_y += gravidade
     y += vel_y
 
+    # colisão vertical com os blocos
+    player_rect = sprite_menor.get_rect(topleft=(x + scroll_x, y))
+    for bloco in blocks:
+        if player_rect.colliderect(bloco.rect):
+            # só "sobe" para o topo se veio caindo de cima
+            if vel_y > 0 and prev_y + player_rect.height <= bloco.rect.top:
+                y = bloco.rect.top - player_rect.height
+                vel_y = 0
+                player_rect.y = y
+
+            # se bater com a cabeça, para a subida
+            elif vel_y < 0 and prev_y >= bloco.rect.bottom:
+                y = bloco.rect.bottom
+                vel_y = 0
+                player_rect.y = y
+                
     # colisão vertical com os blocos
     player_rect = sprite_menor.get_rect(topleft=(x + scroll_x, y))
     for bloco in blocks:

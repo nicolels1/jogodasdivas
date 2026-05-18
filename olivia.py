@@ -2,7 +2,7 @@ import pygame
 import random
 
 SCREEN_OLIVIA = 1
-OVER = 2
+SCREEN_OVER = 5
 
 # carrega 1 vez só
 sprite = None
@@ -47,6 +47,35 @@ start_ticks = pygame.time.get_ticks()
 musica_tocando = False
 
 GROUND_ROW = MAPA_LINHAS - 6
+
+
+def reset_olivia():
+    """Reseta todas as variáveis globais da fase Olivia para reiniciar"""
+    global sprite, frame, tempo, x, scroll_x, vel_y, y
+    global moeda_img, moedas, pontos, fonte
+    global blocks, bloco_img, secoes_criadas
+    global allenemy, enemies_criados, newenemy, start_ticks
+    global musica_tocando
+    
+    sprite = None
+    frame = 0
+    tempo = 0
+    x = 550
+    scroll_x = 0
+    vel_y = 0
+    y = 535  # chao
+    moeda_img = None
+    moedas = None
+    pontos = 0
+    fonte = None
+    blocks = None
+    bloco_img = None
+    secoes_criadas = None
+    allenemy = None
+    enemies_criados = None
+    newenemy = False
+    start_ticks = pygame.time.get_ticks()
+    musica_tocando = False
 
 
 def gerar_secao(secao):
@@ -127,8 +156,8 @@ class JogadorTemp(pygame.sprite.Sprite):
 class StillEnemy(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.Surface((70, 70), pygame.SRCALPHA)
-        self.image.fill((255, 0, 0))
+        self.image = pygame.image.load('assests/imagens/paparazzi.png').convert_alpha()
+        self.image = pygame.transform.scale(self.image, (70, 70))
         self.rect = self.image.get_rect(topleft=(x, y))
         self.mask = pygame.mask.from_surface(self.image)
 
@@ -136,8 +165,8 @@ class StillEnemy(pygame.sprite.Sprite):
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.Surface((70, 70), pygame.SRCALPHA)
-        self.image.fill((255, 120, 0))
+        self.image = pygame.image.load('assests/imagens/paparazzi.png').convert_alpha()
+        self.image = pygame.transform.scale(self.image, (70, 70))
         self.rect = self.image.get_rect(topleft=(x, y))
         self.mask = pygame.mask.from_surface(self.image)
 
@@ -219,9 +248,19 @@ def olivia_tela(window):
                 for col in range(len(mapa_secao[row])):
                     if mapa_secao[row][col] == BLOCK:
                         if random.random() < 0.2:
-                            moeda_x = secao * SECAO_LARGURA + col * TILE_SIZE
-                            moeda_y = row * TILE_SIZE - 60
-                            moedas.add(Moeda(moeda_img, moeda_x, moeda_y))
+                            # Verifica se há espaço vazio acima (pelo menos 2 fileiras)
+                            tem_espaco_acima = True
+                            if row < 2:  # Precisa ter pelo menos 2 fileiras acima
+                                tem_espaco_acima = False
+                            elif row >= 1:
+                                # Verifica se os blocos acima estão vazios
+                                if mapa_secao[row - 1][col] == BLOCK or mapa_secao[row - 2][col] == BLOCK:
+                                    tem_espaco_acima = False
+                            
+                            if tem_espaco_acima:
+                                moeda_x = secao * SECAO_LARGURA + col * TILE_SIZE + TILE_SIZE // 2 - 20
+                                moeda_y = row * TILE_SIZE - 110
+                                moedas.add(Moeda(moeda_img, moeda_x, moeda_y))
 
             # inimigos fixos nessa seção
             coordenadas_still = [
@@ -328,8 +367,7 @@ def olivia_tela(window):
     )
 
     if len(colisoes) > 0:
-        state = OVER
-        return state
+        return SCREEN_OVER
 
     # animação
     if andando:

@@ -11,6 +11,7 @@ SCREEN_OLIVIA = 1
 SCREEN_TAYLOR = 2
 SCREEN_KATY = 3
 SCREEN_LADYGAGA = 4
+SCREEN_OVER = 5
 
 pygame.init()
 pygame.mixer.init()
@@ -22,6 +23,10 @@ pygame.display.set_caption('Jogo das Divas Pop')
 # ----- Carrega imagem de fundo
 background = pygame.image.load('assests/imagens/tela inicio.png').convert()
 background = pygame.transform.scale(background, (1280, 720))
+
+# carrega imagem de game over
+gameover_bg = pygame.image.load('assests/imagens/tela gameover.png').convert()
+gameover_bg = pygame.transform.scale(gameover_bg, (1280, 720))
 
 #cria botão
 botao_img = pygame.image.load('assests/imagens/botao_jogar.png').convert_alpha()
@@ -54,6 +59,14 @@ while game:
                     if botao_rect.collidepoint(event.pos):
                         screen_state = SCREEN_OLIVIA
 
+        if screen_state == SCREEN_OVER:
+            if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                # importa a função de reset e reinicia a fase
+                from olivia import reset_olivia
+                reset_olivia()
+                screen_state = SCREEN_OLIVIA #de alguma forma tem que voltar para a tela das outras tbm 
+                
+
     if screen_state == MENU:
         window.blit(background, (0, 0))
 
@@ -68,6 +81,8 @@ while game:
         screen_state = ladygaga_tela(window)
     elif screen_state == SCREEN_KATY:
         screen_state = katy_tela(window)
+    elif screen_state == SCREEN_OVER:
+        window.blit(gameover_bg, (0, 0))
     elif screen_state == DONE:
         game = False
 

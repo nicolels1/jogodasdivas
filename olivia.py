@@ -2,6 +2,7 @@ import pygame
 import random
 
 SCREEN_OLIVIA = 1
+OVER = 2
 
 # carrega 1 vez só
 sprite = None
@@ -31,14 +32,22 @@ EMPTY = 0
 BLOCK = 1
 SECAO_LARGURA = 1280
 MAPA_LINHAS = 10
-MAPA_COLUNAS = SECAO_LARGURA // TILE_SIZE  # 20
+MAPA_COLUNAS = SECAO_LARGURA // TILE_SIZE  # 12
 
 blocks = None
 bloco_img = None
 secoes_criadas = None
 
+# inimigos
+allenemy = None
+enemies_criados = None
+newenemy = False
+start_ticks = pygame.time.get_ticks()
+
+musica_tocando = False
 
 GROUND_ROW = MAPA_LINHAS - 6
+
 
 def gerar_secao(secao):
     random.seed(secao)
@@ -66,11 +75,37 @@ def gerar_secao(secao):
 
     return mapa
 
+
+def achar_y_em_cima_do_bloco(x_pos, largura_inimigo=70, altura_inimigo=70):
+    """
+    Encontra um bloco embaixo do inimigo e devolve o y para ele ficar em cima.
+    Se não achar nenhum bloco, usa o chão.
+    """
+    global blocks
+
+    if blocks is None:
+        return chao - altura_inimigo
+
+    centro_x = x_pos + largura_inimigo // 2
+    candidatos = []
+
+    for bloco in blocks:
+        if bloco.rect.left <= centro_x <= bloco.rect.right:
+            candidatos.append(bloco)
+
+    if candidatos:
+        bloco_mais_alto = min(candidatos, key=lambda b: b.rect.top)
+        return bloco_mais_alto.rect.top - altura_inimigo
+
+    return chao - altura_inimigo
+
+
 class Moeda(pygame.sprite.Sprite):
     def __init__(self, img, x, y):
         super().__init__()
         self.image = pygame.transform.scale(img, (40, 64))
         self.rect = self.image.get_rect(topleft=(x, y))
+
 
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_img, row, column, offset_x=0):
@@ -80,18 +115,50 @@ class Tile(pygame.sprite.Sprite):
         self.rect.x = offset_x + column * TILE_SIZE
         self.rect.y = row * TILE_SIZE
 
-class JogadorTemp(pygame.sprite.Sprite):
-    def __init__(self, rect):
-        super().__init__()
-        self.rect = rect
 
-musica_tocando = False
+class JogadorTemp(pygame.sprite.Sprite):
+    def __init__(self, image, rect):
+        super().__init__()
+        self.image = image
+        self.rect = rect
+        self.mask = pygame.mask.from_surface(self.image)
+
+
+class StillEnemy(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.Surface((70, 70), pygame.SRCALPHA)
+        self.image.fill((255, 0, 0))
+        self.rect = self.image.get_rect(topleft=(x, y))
+        self.mask = pygame.mask.from_surface(self.image)
+
+
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.Surface((70, 70), pygame.SRCALPHA)
+        self.image.fill((255, 120, 0))
+        self.rect = self.image.get_rect(topleft=(x, y))
+        self.mask = pygame.mask.from_surface(self.image)
+
+        self.velocidade = 3
+        self.limite_esquerda = x - 80
+        self.limite_direita = x + 80
+
+    def update(self):
+        self.rect.x += self.velocidade
+
+        if self.rect.x <= self.limite_esquerda:
+            self.velocidade = abs(self.velocidade)
+        elif self.rect.x >= self.limite_direita:
+            self.velocidade = -abs(self.velocidade)
+
 
 def olivia_tela(window):
     global sprite, frame, tempo, scroll_x, vel_y, y
     global blocks, bloco_img, secoes_criadas
     global musica_tocando, moeda_img, moedas, pontos
-
+    global allenemy, enemies_criados, newenemy, start_ticks
     global fonte
 
     if fonte is None:
@@ -100,9 +167,14 @@ def olivia_tela(window):
     if moeda_img is None:
         moeda_img = pygame.image.load('assests/imagens/moeda.png').convert_alpha()
 
-
     if moedas is None:
         moedas = pygame.sprite.Group()
+
+    if allenemy is None:
+        allenemy = pygame.sprite.Group()
+
+    if enemies_criados is None:
+        enemies_criados = set()
 
     # toca a música só quando entrar nessa tela
     if not musica_tocando:
@@ -146,16 +218,27 @@ def olivia_tela(window):
             for row in range(len(mapa_secao)):
                 for col in range(len(mapa_secao[row])):
                     if mapa_secao[row][col] == BLOCK:
-                        # chance de ter moeda nesse bloco
-                        if random.random() < 0.2:  # 20% de chance
+                        if random.random() < 0.2:
                             moeda_x = secao * SECAO_LARGURA + col * TILE_SIZE
-                            moeda_y = row * TILE_SIZE - 60  # em cima do bloco
+                            moeda_y = row * TILE_SIZE - 60
                             moedas.add(Moeda(moeda_img, moeda_x, moeda_y))
 
+            # inimigos fixos nessa seção
+            coordenadas_still = [
+                [780, 100], [1140, 400], [1540, 100], [2000, 100], [2300, 100],
+                [2610, 100], [2950, 100], [3230, 100], [3500, 100], [4000, 100]
+            ]
+
+            for coord in coordenadas_still:
+                ex = coord[0]
+                if secao * SECAO_LARGURA <= ex < (secao + 1) * SECAO_LARGURA:
+                    if (ex, coord[1]) not in enemies_criados:
+                        ey = achar_y_em_cima_do_bloco(ex)
+                        still = StillEnemy(ex, ey)
+                        allenemy.add(still)
+                        enemies_criados.add((ex, coord[1]))
+
             secoes_criadas.add(secao)
-        
-    for moeda in moedas:
-        window.blit(moeda.image, (moeda.rect.x - scroll_x, moeda.rect.y))
 
     keys = pygame.key.get_pressed()
     andando = False
@@ -195,28 +278,27 @@ def olivia_tela(window):
     if keys[pygame.K_SPACE] and pode_pular:
         vel_y = forca_pulo
 
-    prev_y = y
-
     # gravidade
     vel_y += gravidade
     y += vel_y
 
-    
+    # atualiza retângulo do player
+    player_rect = sprite_menor.get_rect(topleft=(x + scroll_x, y))
+
+    # coleta moedas
     for moeda in moedas.copy():
         if player_rect.colliderect(moeda.rect):
             moedas.remove(moeda)
             pontos += 1
 
-    player_rect = sprite_menor.get_rect(topleft=(x + scroll_x, y))
-                
     # colisão vertical com os blocos
     for bloco in blocks:
         if player_rect.colliderect(bloco.rect):
-            if vel_y > 0:  # caindo
+            if vel_y > 0:
                 y = bloco.rect.top - player_rect.height
                 vel_y = 0
                 player_rect.y = y
-            elif vel_y < 0:  # subindo
+            elif vel_y < 0:
                 y = bloco.rect.bottom
                 vel_y = 0
                 player_rect.y = y
@@ -225,6 +307,29 @@ def olivia_tela(window):
     if y > chao:
         y = chao
         vel_y = 0
+
+    # inimigo novo a cada 5s, a partir de 10s
+    time_in_seconds = int((pygame.time.get_ticks() - start_ticks) / 1000)
+
+    if time_in_seconds >= 10 and time_in_seconds % 5 == 0 and newenemy is False:
+        enemy_x = x + scroll_x + 600
+        enemy_y = achar_y_em_cima_do_bloco(enemy_x)
+        enemy = Enemy(enemy_x, enemy_y)
+        allenemy.add(enemy)
+        newenemy = True
+
+    if time_in_seconds % 5 != 0:
+        newenemy = False
+
+    # colisão com inimigos
+    jogador_temp = JogadorTemp(sprite_menor, player_rect)
+    colisoes = pygame.sprite.spritecollide(
+        jogador_temp, allenemy, False, pygame.sprite.collide_mask
+    )
+
+    if len(colisoes) > 0:
+        state = OVER
+        return state
 
     # animação
     if andando:
@@ -248,6 +353,12 @@ def olivia_tela(window):
     # desenha as moedas
     for moeda in moedas:
         window.blit(moeda.image, (moeda.rect.x - scroll_x, moeda.rect.y))
+
+    # atualiza e desenha inimigos
+    for enemy in allenemy:
+        if hasattr(enemy, "update"):
+            enemy.update()
+        window.blit(enemy.image, (enemy.rect.x - scroll_x, enemy.rect.y))
 
     # desenha personagem
     window.blit(sprite_menor, (x, y))

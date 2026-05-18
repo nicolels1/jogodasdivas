@@ -2,6 +2,7 @@ import pygame
 import random
 
 SCREEN_OLIVIA = 1
+SCREEN_TAYLOR = 2
 SCREEN_OVER = 5
 
 # carrega 1 vez só
@@ -402,5 +403,9 @@ def olivia_tela(window):
     window.blit(sprite_menor, (x, y))
     texto = fonte.render(f'Moedas: {pontos}', True, (255, 255, 0))
     window.blit(texto, (20, 20))
+
+    # CRITÉRIO DE VITÓRIA: Se pegar 10 moedas, passa para a Taylor Swift!
+    if pontos >= 10:
+        return SCREEN_TAYLOR
 
     return SCREEN_OLIVIA
